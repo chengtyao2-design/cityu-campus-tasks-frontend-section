@@ -1,0 +1,111 @@
+/* 增强地图容器样式 */
+.leaflet-container {
+  background-color: rgba(var(--color-bg-secondary), 0.1) !important;
+  outline: none;
+}
+
+/* 确保瓦片正确显示 */
+.leaflet-tile {
+  filter: none !important;
+  visibility: visible !important;
+}
+
+/* 瓦片加载动画 */
+.leaflet-tile-loading {
+  opacity: 0.5;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* 增强地图控件可见性 */
+.leaflet-control-zoom {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 确保弹出窗口正确显示 */
+.leaflet-popup-content-wrapper {
+  background-color: rgb(var(--color-bg-primary));
+  color: rgb(var(--color-text-primary));
+  border-radius: 8px;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.2);
+}
+
+/* 自定义标记样式增强 */
+.custom-marker-interactive {
+  transition: transform 0.2s ease-out;
+}
+
+/* 地图容器加载状态 */
+.map-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(var(--color-bg-primary), 0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.map-container.loading::before {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* 地图错误状态 */
+.map-container.error::before {
+  content: '地图加载失败';
+  opacity: 1;
+  pointer-events: all;
+  background: rgba(var(--color-bg-primary), 0.9);
+  color: rgb(var(--color-error));
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* 地图重试按钮 */
+.map-retry-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
+  background: rgb(var(--color-primary));
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 确保地图图层正确叠加 */
+.leaflet-container-enhanced .leaflet-pane {
+  z-index: 1;
+}
+
+.leaflet-container-enhanced .leaflet-overlay-pane {
+  z-index: 4;
+}
+
+.leaflet-container-enhanced .leaflet-marker-pane {
+  z-index: 6;
+}
+
+.leaflet-container-enhanced .leaflet-tooltip-pane {
+  z-index: 7;
+}
+
+.leaflet-container-enhanced .leaflet-popup-pane {
+  z-index: 8;
+}
+
+.leaflet-container-enhanced .leaflet-control {
+  z-index: 10;
+}

@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
+import './LeafletMap.css';
 import { TaskLocation, getCategoryColor } from '../../data/seedTasks';
 
 // Fix for default markers
@@ -111,6 +112,27 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
   enableClustering = false,
 }) => {
   const mapRef = useRef<L.Map | null>(null);
+  const [mapKey, setMapKey] = useState<number>(0); // 用于强制重新渲染地图
+  
+  // 重试加载地图的函数
+  const handleRetryMap = () => {
+    // 强制重新渲染地图组件
+    setMapKey(prev => prev + 1);
+    
+    // 清除可能的缓存
+    if (window.localStorage) {
+      const cacheKeys = [];
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i);
+        if (key && key.includes('leaflet-tile')) {
+          cacheKeys.push(key);
+        }
+      }
+      cacheKeys.forEach(key => window.localStorage.removeItem(key));
+    }
+    
+    console.log('正在重新加载地图...');
+  };
 
   const markers = useMemo(
     () =>
@@ -143,20 +165,74 @@ const LeafletMap: React.FC<LeafletMapProps> = ({
 
   return (
     <div
-      style={{ height, width: '100%', zIndex: 1 }}
-      className="relative rounded-lg overflow-hidden border border-border/20"
+      style={{ 
+        height, 
+        width: '100%', 
+        zIndex: 1,
+        backgroundColor: 'rgba(var(--color-bg-secondary), 0.1)',
+        position: 'relative'
+      }}
+      className="relative rounded-lg overflow-hidden border border-border/20 map-container"
     >
       <MapContainer
+        key={`map-instance-${mapKey}`}
         center={CITYU_CENTER}
         zoom={16}
         style={{ height: '100%', width: '100%', zIndex: 1 }}
         ref={mapRef as any}
         zoomControl
         scrollWheelZoom
+        attributionControl={true}
+        doubleClickZoom={true}
+        fadeAnimation={true}
+        markerZoomAnimation={true}
+        preferCanvas={true}
+        className="leaflet-container-enhanced"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={19}
+          subdomains={['a', 'b', 'c']}
+          detectRetina={true}
+          className="map-tiles"
+          eventHandlers={{
+            tileerror: (e) => {
+              console.error('地图瓦片加载失败，尝试使用备用源', e);
+              
+              // 触发自定义事件，通知错误处理组件
+              const errorEvent = new CustomEvent('leaflet-tile-error', { 
+                detail: { error: e, timestamp: Date.now() } 
+              });
+              document.dispatchEvent(errorEvent);
+              
+              // 瓦片加载失败时自动尝试备用源
+              const tileElement = e.tile as HTMLElement;
+              if (tileElement && tileElement.src) {
+                // 尝试多个备用源
+                if (tileElement.src.includes('tile.openstreetmap.org')) {
+                  tileElement.src = tileElement.src.replace(
+                    'tile.openstreetmap.org', 
+                    'a.tile.openstreetmap.fr/hot'
+                  );
+                } else if (tileElement.src.includes('openstreetmap.fr')) {
+                  // 如果第一个备用源也失败，尝试第二个
+                  tileElement.src = tileElement.src.replace(
+                    'a.tile.openstreetmap.fr/hot', 
+                    'tile.openstreetmap.de'
+                  );
+                }
+              }
+            }
+          }}
+        />
+        
+        {/* 备用瓦片图层，使用另一个免费无需认证的源 */}
+        <TileLayer
+          url="https://tile.openstreetmap.de/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          maxZoom={18}
+          className="backup-tiles"
         />
 
         <MapBoundsHandler tasks={tasks} />
